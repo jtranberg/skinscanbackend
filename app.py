@@ -345,6 +345,10 @@ if users_collection.count_documents({'email': 'jtranberg@hotmail.com'}) == 0:
     })
     print("✅ Test user inserted into MongoDB")
 
+import os
+
 if __name__ == '__main__':
-    print("🚀 DR.Epidermus Backend starting on port 5050 in DEBUG mode...")
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))  # Render will provide a dynamic port
+    print(f"🚀 DR.Epidermus Backend starting on port {port} in DEBUG mode...")
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
+
