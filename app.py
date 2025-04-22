@@ -16,7 +16,7 @@ import re
 from PIL import Image
 import traceback
 import requests
-
+import certifi
 
 # === Load environment variables ===
 load_dotenv()
@@ -33,7 +33,7 @@ CORS(app)
 
 # === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI") or "mongodb://localhost:27017"
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['epidermus']
 users_collection = db['users']
 
@@ -50,6 +50,8 @@ def download_if_missing(local_path, github_url):
         with open(local_path, 'wb') as f:
             f.write(response.content)
         print(f"✅ Downloaded {os.path.basename(local_path)}")
+
+
 
 # === Before loading models ===
 MODEL_DIR = 'model'
