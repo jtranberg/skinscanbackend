@@ -33,7 +33,7 @@ CORS(app)
 
 # === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI") or "mongodb://localhost:27017"
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
 db = client['epidermus']
 users_collection = db['users']
 
