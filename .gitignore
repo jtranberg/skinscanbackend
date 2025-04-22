@@ -5,6 +5,9 @@
 model/*.keras
 model/*.h5
 
+# ✅ Allow JSON files in model/
+!model/
+!model/*.json
 
 # Ignore virtual environment
 venv/
@@ -21,10 +24,7 @@ logs/
 *.log
 *.sqlite3
 
-# Ignore compiled machine learning model files
-model/
-*.h5
-*.npy
+
 
 # Ignore uploaded files
 static/uploads/
