@@ -1,3 +1,11 @@
+#git Ignoremodels . @ github release,,3 class and 8class
+/model/best_model.keras
+/model/best_model3.keras
+
+model/*.keras
+model/*.h5
+
+
 # Ignore virtual environment
 venv/
 .env

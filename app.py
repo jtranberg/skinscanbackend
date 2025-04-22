@@ -15,6 +15,8 @@ from geopy.geocoders import Nominatim
 import re
 from PIL import Image
 import traceback
+import requests
+
 
 # === Load environment variables ===
 load_dotenv()
@@ -40,6 +42,31 @@ try:
     print("✅ Connected to MongoDB successfully")
 except Exception as e:
     print(f"❌ Failed to connect to MongoDB: {e}")
+
+def download_if_missing(local_path, github_url):
+    if not os.path.exists(local_path):
+        print(f"⬇️ Downloading {os.path.basename(local_path)}...")
+        response = requests.get(github_url)
+        with open(local_path, 'wb') as f:
+            f.write(response.content)
+        print(f"✅ Downloaded {os.path.basename(local_path)}")
+
+# === Before loading models ===
+MODEL_DIR = 'model'
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+download_if_missing(
+    os.path.join(MODEL_DIR, 'best_model3.keras'),
+    'https://github.com/jtranberg/3_class_model/releases/download/v1.0/best_model3.keras'
+)
+
+download_if_missing(
+    os.path.join(MODEL_DIR, 'best_model.keras'),
+    'https://github.com/jtranberg/8_class_model/releases/download/v1.0/best_model.keras'
+
+)
+
+
 
 # === Paths ===
 MODEL_PATH = os.path.join('model', 'best_model.keras')
