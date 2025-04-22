@@ -1,0 +1,10 @@
+{
+  "Actinic keratoses": "Cryotherapy, topical 5-fluorouracil (5-FU), or imiquimod cream",
+  "Basal cell carcinoma": "Surgical excision, Mohs micrographic surgery, or topical imiquimod",
+  "Benign keratosis-like lesions": "Observation or cryotherapy if symptomatic or for cosmetic reasons",
+  "Dermatofibroma": "No treatment necessary unless symptomatic, then excision",
+  "Melanocytic nevi": "Monitoring for changes, excision if suspicious or for cosmetic reasons",
+  "Melanoma": "Surgical excision with clear margins, immunotherapy, or targeted therapy",
+  "Normal": "No treatment necessary",
+  "Vascular lesions": "Laser therapy, sclerotherapy, or observation depending on lesion type"
+}
