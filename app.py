@@ -43,13 +43,20 @@ try:
 except Exception as e:
     print(f"❌ Failed to connect to MongoDB: {e}")
 
+
+
 def download_if_missing(local_path, github_url):
     if not os.path.exists(local_path):
         print(f"⬇️ Downloading {os.path.basename(local_path)}...")
-        response = requests.get(github_url)
-        with open(local_path, 'wb') as f:
-            f.write(response.content)
-        print(f"✅ Downloaded {os.path.basename(local_path)}")
+        response = requests.get(github_url, allow_redirects=True)
+        
+        # ✅ Ensure it's a binary stream
+        if response.status_code == 200 and "html" not in response.headers.get("Content-Type", ""):
+            with open(local_path, 'wb') as f:
+                f.write(response.content)
+            print(f"✅ Downloaded {os.path.basename(local_path)}")
+        else:
+            print(f"❌ Failed to download {os.path.basename(local_path)} - Not a binary file")
 
 
 
