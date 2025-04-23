@@ -100,92 +100,52 @@ def detect_skin(img_array):
 @app.route('/register', methods=['POST'])
 def register():
     try:
-        # 🔍 Parse and validate incoming JSON
-        data = request.get_json(force=True)
+        data = request.get_json()
         print("📩 Register Payload:", data)
-
-        if not isinstance(data, dict):
-            print("❌ Payload is not a dictionary.")
-            return jsonify({'error': 'Invalid JSON format'}), 400
-
         email = data.get('email')
         password = data.get('password')
 
-        print(f"📧 Email received: {email}")
-        print(f"🔑 Password length: {len(password) if password else 'None'}")
-
-        # 🧼 Sanitize and validate inputs
         if email:
             email = email.strip().lower()
         if not email or not password:
-            print("⚠️ Missing email or password.")
             return jsonify({'error': 'Email and password are required'}), 400
 
         if len(password) < 6:
-            print("⚠️ Password too short.")
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
-        # 🔍 Check for duplicate user
-        existing = users_collection.find_one({'email': email})
-        print("🔎 Existing user found:" if existing else "✅ Email available.")
-
-        if existing:
+        if users_collection.find_one({'email': email}):
             return jsonify({'error': 'User already exists'}), 409
 
-        # 🔐 Store hashed password
-        hashed = generate_password_hash(password)
         users_collection.insert_one({
             'email': email,
-            'password': hashed
+            'password': generate_password_hash(password)
         })
 
         print(f"✅ Registered user: {email}")
         return jsonify({'message': 'Registration successful', 'email': email}), 201
 
     except Exception as e:
-        print("❌ Exception during registration:", e)
+        print(f"❌ Registration error: {e}")
         traceback.print_exc()
         return jsonify({'error': 'Registration failed'}), 500
-
 
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        data = request.get_json(force=True)
+        data = request.get_json()
         print("📩 Login Payload:", data)
-
-        if not isinstance(data, dict):
-            print("❌ Payload is not a valid JSON object.")
-            return jsonify({'error': 'Invalid JSON format'}), 400
-
         email = data.get('email')
         password = data.get('password')
-
-        print(f"📧 Email: {email}")
-        print(f"🔑 Password length: {len(password) if password else 'None'}")
-
         if not email or not password:
-            print("⚠️ Missing email or password.")
             return jsonify({'error': 'Email and password are required'}), 400
-
-        user = users_collection.find_one({'email': email.strip().lower()})
-        print("🔍 User found in DB" if user else "❌ User not found.")
-
-        if not user:
+        user = users_collection.find_one({'email': email})
+        if not user or not check_password_hash(user['password'], password):
             return jsonify({'error': 'Invalid credentials'}), 401
-
-        if not check_password_hash(user['password'], password):
-            print("❌ Password mismatch.")
-            return jsonify({'error': 'Invalid credentials'}), 401
-
-        print(f"✅ Login success for: {email}")
         return jsonify({'message': 'Login successful', 'email': email}), 200
-
     except Exception as e:
         print(f"❌ Login error: {e}")
         traceback.print_exc()
         return jsonify({'error': 'Login failed'}), 500
-
 
 # === Chatbot Route ===
 @app.route('/chatbot', methods=['POST'])
