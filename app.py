@@ -31,22 +31,27 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-MONGO_URI = os.getenv("MONGO_URI")  # Should include `/drepidermus` in the URI
+# === MongoDB Connection ===
+# Make sure your .env file includes: 
+# MONGO_URI=mongodb+srv://jtranberg:<password>@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true
+
+MONGO_URI = os.getenv("MONGO_URI")  # ✅ Should include `/drepidermus` in the URI
 
 try:
     client = MongoClient(
         MONGO_URI,
         tls=True,
-        tlsCAFile=certifi.where(),  # ✅ Trusts Atlas CA
-        serverSelectionTimeoutMS=5000  # optional but helpful
+        tlsCAFile=certifi.where(),      # ✅ Trusts Atlas CA for SSL
+        serverSelectionTimeoutMS=5000   # ✅ Helpful timeout for faster failures
     )
-    db = client.get_database()  # ✅ Auto-grab database from URI
-    users_collection = db['users']
-    client.admin.command("ping")  # ✅ Force full SSL check
+    db = client.get_database()         # ✅ Automatically selects 'drepidermus' from URI
+    users_collection = db['users']     # ✅ Defines collection for later use
+    client.admin.command("ping")       # ✅ Actively pings MongoDB to verify full handshake
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
-    users_collection = None
+    users_collection = None            # 🔒 Prevents crash if used before connection
+
 
 
 
@@ -236,12 +241,12 @@ Respond **only** in JSON format like:
         return jsonify({"error": str(e)}), 500
 
 # === Inject test user ===
-if users_collection.count_documents({'email': 'jtranberg@hotmail.com'}) == 0:
-    users_collection.insert_one({
-        'email': 'jtranberg@hotmail.com',
-        'password': generate_password_hash('sa')
-    })
-    print("✅ Test user inserted into MongoDB")
+# if users_collection.count_documents({'email': 'jtranberg@hotmail.com'}) == 0:
+#     users_collection.insert_one({
+#         'email': 'jtranberg@hotmail.com',
+#         'password': generate_password_hash('sa')
+#     })
+#     print("✅ Test user inserted into MongoDB")
 
 # === Launch ===
 if __name__ == '__main__':
