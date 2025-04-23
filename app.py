@@ -33,14 +33,14 @@ app = Flask(__name__)
 CORS(app)
 
 # === MongoDB Setup ===
+# === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI")  # ✅ Should include `/drepidermus` in the URI
 
 try:
     client = MongoClient(
         MONGO_URI,
-        ssl=True,
-        ssl_cert_reqs=ssl.CERT_REQUIRED,
-        ssl_ca_certs=certifi.where(),
+        tls=True,
+        tlsCAFile=certifi.where(),  # ✅ Trusts Atlas CA for SSL
         serverSelectionTimeoutMS=5000
     )
     db = client.get_database()
