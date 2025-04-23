@@ -32,24 +32,28 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
+
 # === MongoDB Setup ===
-# === MongoDB Setup ===
-MONGO_URI = os.getenv("MONGO_URI")  # ✅ Should include `/drepidermus` in the URI
+from pymongo import MongoClient
+import certifi
+
+MONGO_URI = os.getenv("MONGO_URI")  # ✅ Must include `/drepidermus` in the path
 
 try:
     client = MongoClient(
         MONGO_URI,
-        tls=True,
-        tlsCAFile=certifi.where(),  # ✅ Trusts Atlas CA for SSL
+        tls=True,                    # ✅ enables TLS
+        tlsCAFile=certifi.where(),  # ✅ trusts Atlas CA cert
         serverSelectionTimeoutMS=5000
     )
-    db = client.get_database()
+    db = client.get_database()     # Auto-selects `drepidermus` if in URI
     users_collection = db['users']
-    client.admin.command("ping")
+    client.admin.command("ping")  # Force immediate connection test
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
     users_collection = None
+
 
 
 
