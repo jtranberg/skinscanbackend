@@ -17,6 +17,7 @@ import requests
 import certifi
 import traceback
 import re
+import ssl
 
 # === Load environment variables ===
 load_dotenv()
@@ -31,26 +32,25 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-# === MongoDB Connection ===
-# Make sure your .env file includes: 
-# MONGO_URI=mongodb+srv://jtranberg:<password>@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true
-
+# === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI")  # ✅ Should include `/drepidermus` in the URI
 
 try:
     client = MongoClient(
         MONGO_URI,
-        tls=True,
-        tlsCAFile=certifi.where(),      # ✅ Trusts Atlas CA for SSL
-        serverSelectionTimeoutMS=5000   # ✅ Helpful timeout for faster failures
+        ssl=True,
+        ssl_cert_reqs=ssl.CERT_REQUIRED,
+        ssl_ca_certs=certifi.where(),
+        serverSelectionTimeoutMS=5000
     )
-    db = client.get_database()         # ✅ Automatically selects 'drepidermus' from URI
-    users_collection = db['users']     # ✅ Defines collection for later use
-    client.admin.command("ping")       # ✅ Actively pings MongoDB to verify full handshake
+    db = client.get_database()
+    users_collection = db['users']
+    client.admin.command("ping")
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
-    users_collection = None            # 🔒 Prevents crash if used before connection
+    users_collection = None
+
 
 
 
