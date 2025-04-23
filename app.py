@@ -31,7 +31,7 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-# === MongoDB Setup (updated for SSL fix) ===
+# === MongoDB Setup (updated for SSL ) ===
 MONGO_URI = os.getenv("MONGO_URI")
 try:
     client = MongoClient(
@@ -41,9 +41,11 @@ try:
         serverSelectionTimeoutMS=5000
     )
     db = client.get_database()
+    users_collection = db['users']  # ✅ Add this line
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
+
 
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
