@@ -31,20 +31,23 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-# === MongoDB Setup (updated for SSL ) ===
-MONGO_URI = os.getenv("MONGO_URI")
+MONGO_URI = os.getenv("MONGO_URI")  # Should include `/drepidermus` in the URI
+
 try:
     client = MongoClient(
         MONGO_URI,
         tls=True,
-        tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=5000
+        tlsCAFile=certifi.where(),  # ✅ Trusts Atlas CA
+        serverSelectionTimeoutMS=5000  # optional but helpful
     )
-    db = client.get_database()
-    users_collection = db['users']  # ✅ Add this line
+    db = client.get_database()  # ✅ Auto-grab database from URI
+    users_collection = db['users']
+    client.admin.command("ping")  # ✅ Force full SSL check
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
+    users_collection = None
+
 
 
 # === Utility: Model Downloader ===
