@@ -37,23 +37,18 @@ CORS(app)
 from pymongo import MongoClient
 import certifi
 
-MONGO_URI = os.getenv("MONGO_URI")  # ✅ Must include `/drepidermus` in the path
-
+MONGO_URI = os.getenv("MONGO_URI")
 try:
     client = MongoClient(
         MONGO_URI,
-        tls=True,                    # ✅ enables TLS
-        tlsCAFile=certifi.where(),  # ✅ trusts Atlas CA cert
+        tls=True,
+        tlsCAFile=certifi.where(),
         serverSelectionTimeoutMS=5000
     )
-    db = client.get_database()     # Auto-selects `drepidermus` if in URI
-    users_collection = db['users']
-    client.admin.command("ping")  # Force immediate connection test
+    db = client.get_database()
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
-    users_collection = None
-
 
 
 
