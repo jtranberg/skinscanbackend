@@ -110,13 +110,11 @@ def register():
         email = data.get('email')
         password = data.get('password')
 
-        # ✅ Normalize and validate email
         if email:
             email = email.strip().lower()
         if not email or not password:
             return jsonify({'error': 'Email and password are required'}), 400
 
-        # ✅ Basic password strength check
         if len(password) < 6:
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
@@ -130,11 +128,11 @@ def register():
 
         print(f"✅ Registered user: {email}")
         return jsonify({'message': 'Registration successful', 'email': email}), 201
-        except Exception as e:
-        import traceback
-        traceback.print_exc()  # ✅ Show full error in logs
+
+    except Exception as e:
         print(f"❌ Registration error: {e}")
-        return jsonify({'error': 'Registration failed', 'details': str(e)}), 500
+        return jsonify({'error': 'Registration failed'}), 500
+
 
 
 
