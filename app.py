@@ -32,11 +32,7 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-
 # === MongoDB Setup ===
-from pymongo import MongoClient
-import certifi
-
 MONGO_URI = os.getenv("MONGO_URI")
 try:
     client = MongoClient(
@@ -46,13 +42,11 @@ try:
         serverSelectionTimeoutMS=5000
     )
     db = client.get_database()
+    users_collection = db['users']
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
-
-
-
-
+    users_collection = None
 
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
@@ -106,51 +100,92 @@ def detect_skin(img_array):
 @app.route('/register', methods=['POST'])
 def register():
     try:
-        data = request.get_json()
+        # 🔍 Parse and validate incoming JSON
+        data = request.get_json(force=True)
+        print("📩 Register Payload:", data)
+
+        if not isinstance(data, dict):
+            print("❌ Payload is not a dictionary.")
+            return jsonify({'error': 'Invalid JSON format'}), 400
+
         email = data.get('email')
         password = data.get('password')
 
+        print(f"📧 Email received: {email}")
+        print(f"🔑 Password length: {len(password) if password else 'None'}")
+
+        # 🧼 Sanitize and validate inputs
         if email:
             email = email.strip().lower()
         if not email or not password:
+            print("⚠️ Missing email or password.")
             return jsonify({'error': 'Email and password are required'}), 400
 
         if len(password) < 6:
+            print("⚠️ Password too short.")
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
-        if users_collection.find_one({'email': email}):
+        # 🔍 Check for duplicate user
+        existing = users_collection.find_one({'email': email})
+        print("🔎 Existing user found:" if existing else "✅ Email available.")
+
+        if existing:
             return jsonify({'error': 'User already exists'}), 409
 
+        # 🔐 Store hashed password
+        hashed = generate_password_hash(password)
         users_collection.insert_one({
             'email': email,
-            'password': generate_password_hash(password)
+            'password': hashed
         })
 
         print(f"✅ Registered user: {email}")
         return jsonify({'message': 'Registration successful', 'email': email}), 201
 
     except Exception as e:
-        print(f"❌ Registration error: {e}")
+        print("❌ Exception during registration:", e)
+        traceback.print_exc()
         return jsonify({'error': 'Registration failed'}), 500
-
-
 
 
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
+        print("📩 Login Payload:", data)
+
+        if not isinstance(data, dict):
+            print("❌ Payload is not a valid JSON object.")
+            return jsonify({'error': 'Invalid JSON format'}), 400
+
         email = data.get('email')
         password = data.get('password')
+
+        print(f"📧 Email: {email}")
+        print(f"🔑 Password length: {len(password) if password else 'None'}")
+
         if not email or not password:
+            print("⚠️ Missing email or password.")
             return jsonify({'error': 'Email and password are required'}), 400
-        user = users_collection.find_one({'email': email})
-        if not user or not check_password_hash(user['password'], password):
+
+        user = users_collection.find_one({'email': email.strip().lower()})
+        print("🔍 User found in DB" if user else "❌ User not found.")
+
+        if not user:
             return jsonify({'error': 'Invalid credentials'}), 401
+
+        if not check_password_hash(user['password'], password):
+            print("❌ Password mismatch.")
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        print(f"✅ Login success for: {email}")
         return jsonify({'message': 'Login successful', 'email': email}), 200
+
     except Exception as e:
         print(f"❌ Login error: {e}")
+        traceback.print_exc()
         return jsonify({'error': 'Login failed'}), 500
+
 
 # === Chatbot Route ===
 @app.route('/chatbot', methods=['POST'])
@@ -252,14 +287,6 @@ Respond **only** in JSON format like:
     except Exception as e:
         print(f"❌ Prediction error: {e}")
         return jsonify({"error": str(e)}), 500
-
-# === Inject test user ===
-# if users_collection.count_documents({'email': 'jtranberg@hotmail.com'}) == 0:
-#     users_collection.insert_one({
-#         'email': 'jtranberg@hotmail.com',
-#         'password': generate_password_hash('sa')
-#     })
-#     print("✅ Test user inserted into MongoDB")
 
 # === Launch ===
 if __name__ == '__main__':
