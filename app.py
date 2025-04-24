@@ -57,6 +57,17 @@ except Exception as e:
     users_collection = None
 
 
+if users_collection:
+    if users_collection.count_documents({'email': 'test@example.com'}) == 0:
+        users_collection.insert_one({
+            'email': 'test@example.com',
+            'password': generate_password_hash('test1234')  # 🔐 hashed dummy password
+        })
+        print("✅ Inserted dummy test user into MongoDB")
+    else:
+        print("ℹ️ Dummy user already exists")
+
+
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
     if not os.path.exists(local_path):
