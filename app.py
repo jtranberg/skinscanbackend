@@ -33,15 +33,21 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
+
+print("Using PyMongo version:", pymongo.version)
+print("Using certifi CA file:", certifi.where())
+
 # === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI")
 try:
     client = MongoClient(
-        MONGO_URI,
-        tls=True,
-        tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=5000
-    )
+    MONGO_URI,
+    tls=True,
+    tlsCAFile=certifi.where(),
+    ssl_cert_reqs=ssl.CERT_REQUIRED,
+    ssl_version=ssl.PROTOCOL_TLSv1_2,  # 🔐 Force TLSv1.2
+    serverSelectionTimeoutMS=5000
+)
     db = client.get_database()
     users_collection = db['users']
     # client.admin.command("ping")
