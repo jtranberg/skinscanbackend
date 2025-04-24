@@ -39,7 +39,7 @@ print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
-MONGO_URI = os.getenv("MONGO_URI")
+uri = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
 
 try:
     client = MongoClient(
@@ -49,12 +49,14 @@ try:
         serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
     )
     db = client.get_database()
-    users_collection = db['users']
-    client.admin.command("ping")          # ✅ Verifies connection
+    # users_collection = db['users']
+    # client.admin.command("ping")          # ✅ Verifies connection
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
     users_collection = None
+
+
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
     if not os.path.exists(local_path):
