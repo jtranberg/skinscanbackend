@@ -40,7 +40,7 @@ print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
-uri = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
+MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
 
 
 
