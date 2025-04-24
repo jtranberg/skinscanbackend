@@ -40,23 +40,21 @@ print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
 MONGO_URI = os.getenv("MONGO_URI")
+
 try:
     client = MongoClient(
-    MONGO_URI,
-    tls=True,
-    tlsCAFile=certifi.where(),
-    ssl_cert_reqs=ssl.CERT_REQUIRED,
-    ssl_version=ssl.PROTOCOL_TLSv1_2,  # 🔐 Force TLSv1.2
-    serverSelectionTimeoutMS=5000
-)
+        MONGO_URI,
+        tls=True,
+        tlsCAFile=certifi.where(),         # ✅ Trust MongoDB Atlas cert
+        serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
+    )
     db = client.get_database()
     users_collection = db['users']
-    # client.admin.command("ping")
+    client.admin.command("ping")          # ✅ Verifies connection
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
     users_collection = None
-
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
     if not os.path.exists(local_path):
