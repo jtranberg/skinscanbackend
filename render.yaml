@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: skinscan-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: MONGO_URI
+        value: mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&tls=true
+      - key: GEMINI_API_KEY
+        value: AIzaSyCD6RTodEURBzB74HE_-hjGNBOefI4rWv0
+    autoDeploy: true
+    branch: main
+    healthCheckPath: /
