@@ -19,6 +19,7 @@ import traceback
 import re
 import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 # === Load environment variables ===
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -43,6 +44,7 @@ try:
     )
     db = client.get_database()
     users_collection = db['users']
+    client.admin.command("ping")
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
