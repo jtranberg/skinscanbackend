@@ -41,20 +41,20 @@ print("Using certifi CA file:", certifi.where())
 # === MongoDB Setup ===
 MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
 
+users_collection = None  # Declare early so it's always defined
+
 try:
     client = MongoClient(
         MONGO_URI,
         tls=True,
-        tlsCAFile=certifi.where(),         # ✅ Trust MongoDB Atlas cert
-        serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=5000
     )
     db = client.get_database()
-    # users_collection = db['users']
-    # client.admin.command("ping")          # ✅ Verifies connection
+    users_collection = db['users']  # Assign here
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
-    users_collection = None
 
 
 if users_collection:
