@@ -48,14 +48,18 @@ try:
         tlsCAFile=certifi.where(),         # ✅ Trust MongoDB Atlas cert
         serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
     )
+
+    # 🛠 Force actual connection early
+    client.admin.command("ping")          # ✅ Verifies SSL/TLS handshake and server availability
+
     db = client.get_database()
-    # users_collection = db['users']
-    # client.admin.command("ping")          # ✅ Verifies connection
+    users_collection = db['users']        # ✅ Access the 'users' collection only after successful connection
+
     print("✅ MongoDB connected successfully.")
+    print("🧠 MongoDB server info:", client.server_info())  # Optional: extra confirmation
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
     users_collection = None
-
 
 # === Utility: Model Downloader ===
 def download_if_missing(local_path, github_url):
