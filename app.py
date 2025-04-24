@@ -18,6 +18,7 @@ import certifi
 import traceback
 import re
 import ssl
+from pymongo.errors import ServerSelectionTimeoutError
 
 ssl._create_default_https_context = ssl._create_unverified_context
 # === Load environment variables ===
@@ -39,19 +40,26 @@ print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
-MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
+uri = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
+
+
+
 
 try:
     client = MongoClient(
-        MONGO_URI,
+        uri,
         tls=True,
-        tlsCAFile=certifi.where(),         # ✅ Trust MongoDB Atlas cert
-        serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=5000
     )
+    # Force connection test
+    client.admin.command("ping")
     db = client.get_database()
     users_collection = db['users']
-    client.admin.command("ping")          # ✅ Verifies connection
     print("✅ MongoDB connected successfully.")
+except ServerSelectionTimeoutError as se:
+    print("❌ MongoDB Server Timeout:", se)
+    users_collection = None
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
     users_collection = None
