@@ -49,8 +49,8 @@ try:
         serverSelectionTimeoutMS=5000      # ⏳ Helps with faster fail
     )
     db = client.get_database()
-    # users_collection = db['users']
-    # client.admin.command("ping")          # ✅ Verifies connection
+    users_collection = db['users']
+    client.admin.command("ping")          # ✅ Verifies connection
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
