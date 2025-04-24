@@ -33,6 +33,7 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
+import pymongo
 
 print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
