@@ -44,7 +44,7 @@ try:
     )
     db = client.get_database()
     users_collection = db['users']
-    client.admin.command("ping")
+    # client.admin.command("ping")
     print("✅ MongoDB connected successfully.")
 except Exception as e:
     print("❌ MongoDB connection failed:", e)
