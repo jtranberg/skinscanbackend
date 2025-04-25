@@ -39,22 +39,31 @@ print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
-MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=true&w=majority&tls=true"
+from pymongo import MongoClient
+import certifi
 
-users_collection = None  # Declare early so it's always defined
+MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
+
+users_collection = None  # Ensure it's declared globally
 
 try:
+    # Establish connection with explicit SSL/TLS settings
     client = MongoClient(
         MONGO_URI,
-        tls=True,
-        tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=5000
+        tls=True,  # Use TLS
+        tlsCAFile=certifi.where(),  # Use system-trusted cert store
+        serverSelectionTimeoutMS=5000  # 5s timeout for initial server selection
     )
-    db = client.get_database()
-    users_collection = db['users']  # Assign here
+
+    # Connect to the specific database (explicitly name it for safety)
+    db = client['drepidermus']
+    users_collection = db['users']
+
+    # Confirm connection
     print("✅ MongoDB connected successfully.")
+
 except Exception as e:
-    print("❌ MongoDB connection failed:", e)
+    print("❌ MongoDB connection failed:", str(e))
 
 
 if users_collection:
