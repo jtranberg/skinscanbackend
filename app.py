@@ -155,12 +155,25 @@ def register():
             }), 400
 
         # ✅ Check for existing user
-        if users_collection.find_one({'email': email}):
-            print(f"⚠️ Duplicate registration attempt for {email}")
-            return jsonify({
-                "success": False,
-                "message": "User already exists"
-            }), 409
+       try:
+    print("🔍 Checking for existing user in:", users_collection.database.name)
+    user_exists = users_collection.find_one({'email': email})
+    print("🔎 Query result:", user_exists)
+    if user_exists:
+        print(f"⚠️ Duplicate registration attempt for {email}")
+        return jsonify({
+            "success": False,
+            "message": "User already exists"
+        }), 409
+except Exception as e:
+    print("❌ Failed while checking existing user:", e)
+    import traceback
+    traceback.print_exc()
+    return jsonify({
+        "success": False,
+        "message": f"DB query failed: {str(e)}"
+    }), 500
+
 
         # ✅ Create user
         users_collection.insert_one({
