@@ -1,230 +1,124 @@
+# === Full Backend for DR.Epidermus ===
+import os
+import json
+import traceback
+import ssl
+import certifi
+import pymongo
+import requests
+import numpy as np
+import cv2
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from PIL import Image
-from geopy.geocoders import Nominatim
 import google.generativeai as genai
-import tensorflow as tf
 from tensorflow.keras.models import load_model
-from tensorflow.keras.utils import load_img, img_to_array
-import numpy as np
-import cv2
-import os
-import json
-import requests
-import certifi
-import traceback
-import re
-import ssl
-import pymongo
-from pymongo import MongoClient
-import certifi
+from tensorflow.keras.utils import img_to_array
 
 ssl._create_default_https_context = ssl._create_unverified_context
-# === Load environment variables ===
-# # === MongoDB Setup ===
 
-
-
-MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
-users_collection = None
-try:
-    client = MongoClient(
-        MONGO_URI,
-        tls=True,
-        tlsAllowInvalidCertificates=True,  # ✅ The correct option
-        serverSelectionTimeoutMS=5000
-    )
-    db = client['drepidermus']
-    users_collection = db['users']
-    print("✅ MongoDB connected successfully (with cert bypass).")
-
-except Exception as e:
-    print("❌ MongoDB connection failed:", e)
-
+# === Load environment ===
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 if not gemini_api_key:
-    print("⚠️ Warning: GEMINI_API_KEY is missing.")
+    print("⚠️ GEMINI_API_KEY is missing")
 
-# === Gemini config ===
+# === Gemini setup ===
 genai.configure(api_key=gemini_api_key)
 
-# === Flask setup ===
+# === Flask app ===
 app = Flask(__name__)
 CORS(app)
 
+# === MongoDB connection ===
+MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
 
+def get_users_collection():
+    try:
+        client = MongoClient(
+            MONGO_URI,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=5000
+        )
+        return client['drepidermus']['users']
+    except Exception as e:
+        print("❌ Failed to connect to MongoDB:", e)
+        return None
 
-print("Using PyMongo version:", pymongo.version)
-print("Using certifi CA file:", certifi.where())
-
-
-
-
-# === Utility: Model Downloader ===
-def download_if_missing(local_path, github_url):
-    if not os.path.exists(local_path):
-        print(f"⬇️ Downloading {os.path.basename(local_path)}...")
-        response = requests.get(github_url, allow_redirects=True)
-        if response.status_code == 200 and "html" not in response.headers.get("Content-Type", ""):
-            with open(local_path, 'wb') as f:
-                f.write(response.content)
-            print(f"✅ Downloaded {os.path.basename(local_path)}")
-        else:
-            print(f"❌ Failed to download {os.path.basename(local_path)} - Not a binary file")
-
-# === Model Download & Load ===
+# === Model Setup ===
 MODEL_DIR = 'model'
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-download_if_missing(os.path.join(MODEL_DIR, 'best_model3.keras'),
-                    'https://github.com/jtranberg/3_class_model/releases/download/v1.0/best_model3.keras')
-download_if_missing(os.path.join(MODEL_DIR, 'best_model.keras'),
-                    'https://github.com/jtranberg/8_class_model/releases/download/v1.0/best_model.keras')
-
-MODEL_PATH = os.path.join('model', 'best_model.keras')
-TRIAGE_MODEL_PATH = os.path.join('model', 'best_model3.keras')
-LABELS_PATH = os.path.join('model', 'class_labels_8.json')
-TREATMENTS_PATH = os.path.join('model', 'treatments.json')
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+MODEL_PATH = os.path.join(MODEL_DIR, 'best_model.keras')
+TRIAGE_MODEL_PATH = os.path.join(MODEL_DIR, 'best_model3.keras')
+LABELS_PATH = os.path.join(MODEL_DIR, 'class_labels_8.json')
+TREATMENTS_PATH = os.path.join(MODEL_DIR, 'treatments.json')
 
 model = load_model(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
 triage_model = load_model(TRIAGE_MODEL_PATH) if os.path.exists(TRIAGE_MODEL_PATH) else None
 class_labels = json.load(open(LABELS_PATH)) if os.path.exists(LABELS_PATH) else ["Unknown"]
 treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH) else {}
 
-# === OpenCV Skin Detection ===
-def detect_skin(img_array):
-    try:
-        img_bgr = cv2.cvtColor(img_array.astype('uint8'), cv2.COLOR_RGB2BGR)
-        hsv_img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        lower = np.array([0, 40, 60], dtype=np.uint8)
-        upper = np.array([25, 255, 255], dtype=np.uint8)
-        mask = cv2.inRange(hsv_img, lower, upper)
-        skin_ratio = np.sum(mask > 0) / (mask.shape[0] * mask.shape[1])
-        print(f"🧪 Skin detection: {skin_ratio:.2%} of image is skin")
-        return skin_ratio > 0.35
-    except Exception as e:
-        print("❌ Skin detection error:", e)
-        return False
+# === Routes Below ===
 
 # === Auth Routes ===
-from flask import request, jsonify
-from werkzeug.security import generate_password_hash
-import traceback
-
-from flask import request, jsonify
-from werkzeug.security import generate_password_hash
-import traceback
-
 @app.route('/register', methods=['POST'])
 def register():
-    global users_collection  # Ensure we're using the connected instance
+    users_collection = get_users_collection()
+    if not users_collection:
+        return jsonify({"success": False, "message": "Database not connected"}), 500
 
     try:
-        # ✅ Check if the database is connected
-        if users_collection is None:
-            print("❌ MongoDB is not connected.")
-            return jsonify({
-                "success": False,
-                "message": "Database not connected"
-            }), 500
-
-        print("📡 DB in route:", users_collection.database.name)
-
         data = request.get_json()
-        print("📩 Register Payload:", data)
-
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
 
-        # ✅ Input validation
         if not email or not password:
-            return jsonify({
-                "success": False,
-                "message": "Email and password are required"
-            }), 400
-
+            return jsonify({"success": False, "message": "Email and password are required"}), 400
         if len(password) < 6:
-            return jsonify({
-                "success": False,
-                "message": "Password must be at least 6 characters"
-            }), 400
+            return jsonify({"success": False, "message": "Password must be at least 6 characters"}), 400
 
-        # ✅ Safely check if user exists
-        try:
-            print("🔍 Checking for existing user in:", users_collection.database.name)
-            user_exists = users_collection.find_one({'email': email})
-            print("🔎 Query result:", user_exists)
-            if user_exists:
-                print(f"⚠️ Duplicate registration attempt for {email}")
-                return jsonify({
-                    "success": False,
-                    "message": "User already exists"
-                }), 409
-        except Exception as e:
-            print("❌ Failed while checking existing user:", e)
-            import traceback
-            traceback.print_exc()
-            return jsonify({
-                "success": False,
-                "message": f"DB query failed: {str(e)}"
-            }), 500
+        if users_collection.find_one({'email': email}):
+            return jsonify({"success": False, "message": "User already exists"}), 409
 
-        # ✅ Register new user
         users_collection.insert_one({
             'email': email,
             'password': generate_password_hash(password)
         })
 
-        print(f"✅ Registered user: {email}")
-        return jsonify({
-            "success": True,
-            "message": "Registration successful",
-            "email": email
-        }), 201
-
+        return jsonify({"success": True, "message": "Registration successful", "email": email}), 201
     except Exception as e:
-        print(f"❌ Registration error: {e}")
-        import traceback
         traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "message": "Registration failed"
-        }), 500
-
-
-    except Exception as e:
-        print(f"❌ Registration error: {e}")
-        traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "message": "Registration failed"
-        }), 500
-
+        return jsonify({"success": False, "message": "Registration failed"}), 500
 
 
 @app.route('/login', methods=['POST'])
 def login():
+    users_collection = get_users_collection()
+    if not users_collection:
+        return jsonify({'error': 'Database not connected'}), 500
+
     try:
         data = request.get_json()
-        print("📩 Login Payload:", data)
         email = data.get('email')
         password = data.get('password')
         if not email or not password:
             return jsonify({'error': 'Email and password are required'}), 400
+
         user = users_collection.find_one({'email': email})
         if not user or not check_password_hash(user['password'], password):
             return jsonify({'error': 'Invalid credentials'}), 401
+
         return jsonify({'message': 'Login successful', 'email': email}), 200
     except Exception as e:
-        print(f"❌ Login error: {e}")
         traceback.print_exc()
         return jsonify({'error': 'Login failed'}), 500
+
 
 # === Chatbot Route ===
 @app.route('/chatbot', methods=['POST'])
@@ -234,14 +128,16 @@ def chatbot():
         query = data.get('query', '')
         if not query:
             return jsonify({'error': 'Prompt is required'}), 400
+
         model = genai.GenerativeModel("gemini-1.5-flash")
         result = model.generate_content(query)
         reply = result.text.strip() if hasattr(result, 'text') else "Gemini returned no output."
+
         return jsonify({'response': reply})
     except Exception as e:
-        print("❌ Gemini Chatbot Exception:", e)
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
 
 # === Predict Route ===
 @app.route('/predict', methods=['POST'])
@@ -299,7 +195,6 @@ Respond **only** in JSON format like:
 
         model_gen = genai.GenerativeModel("gemini-1.5-flash")
         result = model_gen.generate_content(prompt)
-        print("🌍 Gemini Geo Response:", result.text)
 
         try:
             raw_text = result.text.strip()
@@ -324,7 +219,7 @@ Respond **only** in JSON format like:
             "suggested_doctors": geo_json.get("doctors", [])
         })
     except Exception as e:
-        print(f"❌ Prediction error: {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # === Launch ===
