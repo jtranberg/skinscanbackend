@@ -24,6 +24,26 @@ import certifi
 
 ssl._create_default_https_context = ssl._create_unverified_context
 # === Load environment variables ===
+# # === MongoDB Setup ===
+
+
+
+MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
+users_collection = None
+try:
+    client = MongoClient(
+        MONGO_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,  # ✅ The correct option
+        serverSelectionTimeoutMS=5000
+    )
+    db = client['drepidermus']
+    users_collection = db['users']
+    print("✅ MongoDB connected successfully (with cert bypass).")
+
+except Exception as e:
+    print("❌ MongoDB connection failed:", e)
+
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 if not gemini_api_key:
@@ -41,25 +61,6 @@ CORS(app)
 print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
-# === MongoDB Setup ===
-
-
-
-MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
-
-try:
-    client = MongoClient(
-        MONGO_URI,
-        tls=True,
-        tlsAllowInvalidCertificates=True,  # ✅ The correct option
-        serverSelectionTimeoutMS=5000
-    )
-    db = client['drepidermus']
-    users_collection = db['users']
-    print("✅ MongoDB connected successfully (with cert bypass).")
-
-except Exception as e:
-    print("❌ MongoDB connection failed:", e)
 
 
 
