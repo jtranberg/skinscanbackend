@@ -18,6 +18,9 @@ import certifi
 import traceback
 import re
 import ssl
+import pymongo
+from pymongo import MongoClient
+import certifi
 
 ssl._create_default_https_context = ssl._create_unverified_context
 # === Load environment variables ===
@@ -33,48 +36,31 @@ genai.configure(api_key=gemini_api_key)
 app = Flask(__name__)
 CORS(app)
 
-import pymongo
+
 
 print("Using PyMongo version:", pymongo.version)
 print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
+
+import ssl
 from pymongo import MongoClient
-import certifi
 
 MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
 
-users_collection = None  # Ensure it's declared globally
-
 try:
-    # Establish connection with explicit SSL/TLS settings
     client = MongoClient(
         MONGO_URI,
-        tls=True,  # Use TLS
-        tlsCAFile=certifi.where(),  # Use system-trusted cert store
-        serverSelectionTimeoutMS=5000  # 5s timeout for initial server selection
+        tls=True,
+        ssl_cert_reqs=ssl.CERT_NONE,  # 🚨 Only for testing
+        serverSelectionTimeoutMS=5000
     )
-
-    # Connect to the specific database (explicitly name it for safety)
     db = client['drepidermus']
     users_collection = db['users']
-
-    # Confirm connection
-    print("✅ MongoDB connected successfully.")
+    print("✅ MongoDB connected successfully (no cert check).")
 
 except Exception as e:
-    print("❌ MongoDB connection failed:", str(e))
-
-
-if users_collection:
-    if users_collection.count_documents({'email': 'test@example.com'}) == 0:
-        users_collection.insert_one({
-            'email': 'test@example.com',
-            'password': generate_password_hash('test1234')  # 🔐 hashed dummy password
-        })
-        print("✅ Inserted dummy test user into MongoDB")
-    else:
-        print("ℹ️ Dummy user already exists")
+    print("❌ MongoDB connection failed (with CERT_NONE):", e)
 
 
 # === Utility: Model Downloader ===
