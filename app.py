@@ -42,9 +42,10 @@ def get_users_collection():
         client = MongoClient(
             MONGO_URI,
             tls=True,
-            tlsAllowInvalidCertificates=True,
+            tlsCAFile=certifi.where(),
             serverSelectionTimeoutMS=5000
         )
+        print("✅ Connected to MongoDB")
         return client['drepidermus']['users']
     except Exception as e:
         print("❌ Failed to connect to MongoDB:", e)
@@ -70,7 +71,7 @@ treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH)
 @app.route('/register', methods=['POST'])
 def register():
     users_collection = get_users_collection()
-    if not users_collection:
+    if users_collection is None:
         return jsonify({"success": False, "message": "Database not connected"}), 500
 
     try:
