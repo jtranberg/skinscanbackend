@@ -43,8 +43,7 @@ print("Using certifi CA file:", certifi.where())
 
 # === MongoDB Setup ===
 
-import ssl
-from pymongo import MongoClient
+
 
 MONGO_URI = "mongodb+srv://jtranberg:vhdvJR1CTc8FhdGN@cluster0.cwpequc.mongodb.net/drepidermus?retryWrites=false&w=majority&ssl=true&authSource=admin&appName=SkinScan"
 
@@ -52,15 +51,16 @@ try:
     client = MongoClient(
         MONGO_URI,
         tls=True,
-        ssl_cert_reqs=ssl.CERT_NONE,  # 🚨 Only for testing
+        tlsAllowInvalidCertificates=True,  # ✅ The correct option
         serverSelectionTimeoutMS=5000
     )
     db = client['drepidermus']
     users_collection = db['users']
-    print("✅ MongoDB connected successfully (no cert check).")
+    print("✅ MongoDB connected successfully (with cert bypass).")
 
 except Exception as e:
-    print("❌ MongoDB connection failed (with CERT_NONE):", e)
+    print("❌ MongoDB connection failed:", e)
+
 
 
 # === Utility: Model Downloader ===
