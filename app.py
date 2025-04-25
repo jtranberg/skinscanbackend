@@ -123,6 +123,9 @@ import traceback
 
 @app.route('/register', methods=['POST'])
 def register():
+    global users_collection  # ✅ Without this, a local shadowed variable may be used
+    print("📡 DB in route:", users_collection.database.name)
+
     try:
         # ✅ Check for DB connection before continuing
         if users_collection is None:
