@@ -123,11 +123,10 @@ import traceback
 
 @app.route('/register', methods=['POST'])
 def register():
-    global users_collection  # ✅ Without this, a local shadowed variable may be used
-    print("📡 DB in route:", users_collection.database.name)
+    global users_collection  # Ensure we're using the connected instance
 
     try:
-        # ✅ Check for DB connection before continuing
+        # ✅ Check if the database is connected
         if users_collection is None:
             print("❌ MongoDB is not connected.")
             return jsonify({
@@ -135,13 +134,15 @@ def register():
                 "message": "Database not connected"
             }), 500
 
+        print("📡 DB in route:", users_collection.database.name)
+
         data = request.get_json()
         print("📩 Register Payload:", data)
 
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
 
-        # ✅ Validation
+        # ✅ Input validation
         if not email or not password:
             return jsonify({
                 "success": False,
@@ -154,28 +155,27 @@ def register():
                 "message": "Password must be at least 6 characters"
             }), 400
 
-        # ✅ Check for existing user
-       try:
-    print("🔍 Checking for existing user in:", users_collection.database.name)
-    user_exists = users_collection.find_one({'email': email})
-    print("🔎 Query result:", user_exists)
-    if user_exists:
-        print(f"⚠️ Duplicate registration attempt for {email}")
-        return jsonify({
-            "success": False,
-            "message": "User already exists"
-        }), 409
-except Exception as e:
-    print("❌ Failed while checking existing user:", e)
-    import traceback
-    traceback.print_exc()
-    return jsonify({
-        "success": False,
-        "message": f"DB query failed: {str(e)}"
-    }), 500
+        # ✅ Safely check if user exists
+        try:
+            print("🔍 Checking for existing user in:", users_collection.database.name)
+            user_exists = users_collection.find_one({'email': email})
+            print("🔎 Query result:", user_exists)
+            if user_exists:
+                print(f"⚠️ Duplicate registration attempt for {email}")
+                return jsonify({
+                    "success": False,
+                    "message": "User already exists"
+                }), 409
+        except Exception as e:
+            print("❌ Failed while checking existing user:", e)
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "success": False,
+                "message": f"DB query failed: {str(e)}"
+            }), 500
 
-
-        # ✅ Create user
+        # ✅ Register new user
         users_collection.insert_one({
             'email': email,
             'password': generate_password_hash(password)
@@ -187,6 +187,16 @@ except Exception as e:
             "message": "Registration successful",
             "email": email
         }), 201
+
+    except Exception as e:
+        print(f"❌ Registration error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "message": "Registration failed"
+        }), 500
+
 
     except Exception as e:
         print(f"❌ Registration error: {e}")
