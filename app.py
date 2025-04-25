@@ -116,6 +116,10 @@ from flask import request, jsonify
 from werkzeug.security import generate_password_hash
 import traceback
 
+from flask import request, jsonify
+from werkzeug.security import generate_password_hash
+import traceback
+
 @app.route('/register', methods=['POST'])
 def register():
     try:
@@ -174,6 +178,7 @@ def register():
             "success": False,
             "message": "Registration failed"
         }), 500
+
 
 
 @app.route('/login', methods=['POST'])
