@@ -112,37 +112,69 @@ def detect_skin(img_array):
         return False
 
 # === Auth Routes ===
+from flask import request, jsonify
+from werkzeug.security import generate_password_hash
+import traceback
+
 @app.route('/register', methods=['POST'])
 def register():
     try:
+        # ✅ Check for DB connection before continuing
+        if users_collection is None:
+            print("❌ MongoDB is not connected.")
+            return jsonify({
+                "success": False,
+                "message": "Database not connected"
+            }), 500
+
         data = request.get_json()
         print("📩 Register Payload:", data)
-        email = data.get('email')
-        password = data.get('password')
 
-        if email:
-            email = email.strip().lower()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+
+        # ✅ Validation
         if not email or not password:
-            return jsonify({'error': 'Email and password are required'}), 400
+            return jsonify({
+                "success": False,
+                "message": "Email and password are required"
+            }), 400
 
         if len(password) < 6:
-            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+            return jsonify({
+                "success": False,
+                "message": "Password must be at least 6 characters"
+            }), 400
 
+        # ✅ Check for existing user
         if users_collection.find_one({'email': email}):
-            return jsonify({'error': 'User already exists'}), 409
+            print(f"⚠️ Duplicate registration attempt for {email}")
+            return jsonify({
+                "success": False,
+                "message": "User already exists"
+            }), 409
 
+        # ✅ Create user
         users_collection.insert_one({
             'email': email,
             'password': generate_password_hash(password)
         })
 
         print(f"✅ Registered user: {email}")
-        return jsonify({'message': 'Registration successful', 'email': email}), 201
+        return jsonify({
+            "success": True,
+            "message": "Registration successful",
+            "email": email
+        }), 201
 
     except Exception as e:
         print(f"❌ Registration error: {e}")
         traceback.print_exc()
-        return jsonify({'error': 'Registration failed'}), 500
+        return jsonify({
+            "success": False,
+            "message": "Registration failed"
+        }), 500
+
 
 @app.route('/login', methods=['POST'])
 def login():
