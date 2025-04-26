@@ -51,37 +51,30 @@ def get_clinics_and_doctors(lat, lon):
     prompt = f"""
 You are a helpful medical assistant AI.
 
-Based on the coordinates latitude: {lat}, longitude: {lon}, list the top 3 **real** dermatology clinics and skin doctors near that location.
+Based on the coordinates (latitude: {lat}, longitude: {lon}), return the top 3 publicly listed dermatology clinics and skin doctors **nearby**.
 
-Only include names that are publicly available online (e.g., listed on Google Maps or clinic websites).
+Return real names that are publicly available (e.g., from Google Maps or clinic websites). Only return JSON — no intro or notes.
 
-Respond ONLY in **valid JSON format** like this:
+If nothing can be found nearby, list 3 commonly available dermatology clinics in the nearest major city.
+
+Respond in this format:
 {{
   "clinics": [
     {{
       "name": "ClearSkin Clinic",
       "note": "Specializes in acne and pigmentation treatment"
-    }},
-    {{
-      "name": "DermCare Center",
-      "note": "Offers mole checks and skin cancer screening"
     }}
   ],
   "doctors": [
     {{
-      "name": "Dr. Jennifer Lee",
+      "name": "Dr. Jane Smith",
       "specialty": "Dermatologist",
-      "note": "Expert in mole analysis and skin cancer detection"
-    }},
-    {{
-      "name": "Dr. Alex Gomez",
-      "specialty": "Skin Specialist",
-      "note": "Focuses on cosmetic skin procedures and acne care"
+      "note": "Expert in melanoma detection"
     }}
   ]
 }}
-Only return the JSON — no explanation or intro.
 """
+
 
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
