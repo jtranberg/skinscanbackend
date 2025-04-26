@@ -80,7 +80,7 @@ Respond ONLY in **valid JSON format**, like this:
 }}
     """
     try:
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         result = model.generate_content(prompt)
         text = result.text
 
