@@ -59,6 +59,12 @@ If specific names are not available for that coordinate, fallback to 3 well-know
 
 Respond only in strict JSON like:
 {{
+    "clinics": [
+    {{
+      "name": "ClearSkin Clinic",
+      "note": "Specializes in acne and pigmentation treatment"
+    }}
+  ],
   "doctors": [
     {{
       "name": "Dr. Lisa Chang",
