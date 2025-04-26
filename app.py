@@ -51,15 +51,15 @@ def get_clinics_and_doctors(lat, lon):
     prompt = f"""
 You are a helpful medical assistant AI.
 
-Based on the location (latitude: {lat}, longitude: {lon}), list 3 **publicly listed dermatologists** or skin doctors near that location.
+Based on the coordinates latitude: {lat}, longitude: {lon}, provide up to 3 dermatology clinics and 3 skin doctors in that region.
 
-Return only names that are available on **public directories** like Google Maps, Healthgrades, or official clinic websites.
+Only include publicly listed names — such as those found on Google Maps, official clinic websites, or public health directories.
 
-If specific names are not available for that coordinate, fallback to 3 well-known dermatologists or skin specialists from the **nearest large city** (like Toronto, Vancouver, etc.).
+If specific names are not available for this location, fallback to well-known dermatologists in the **nearest major city** (like Toronto, Vancouver, Montreal, etc).
 
-Respond only in strict JSON like:
+Respond only with **valid JSON**, no extra commentary. Use this structure:
 {{
-    "clinics": [
+  "clinics": [
     {{
       "name": "ClearSkin Clinic",
       "note": "Specializes in acne and pigmentation treatment"
@@ -67,24 +67,14 @@ Respond only in strict JSON like:
   ],
   "doctors": [
     {{
-      "name": "Dr. Lisa Chang",
+      "name": "Dr. Jane Smith",
       "specialty": "Dermatologist",
-      "note": "Expert in melanoma detection"
-    }},
-    {{
-      "name": "Dr. Raymond Patel",
-      "specialty": "Skin Specialist",
-      "note": "Focuses on cosmetic skin procedures"
-    }},
-    {{
-      "name": "Dr. Aisha Nasser",
-      "specialty": "Dermatologist",
-      "note": "Known for eczema and acne treatment"
+      "note": "Known for skin cancer detection"
     }}
   ]
 }}
-Only return the JSON.
 """
+
 
 
 
