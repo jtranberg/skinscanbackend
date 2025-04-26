@@ -51,25 +51,23 @@ def get_clinics_and_doctors(lat, lon):
     prompt = f"""
 You are a helpful medical assistant AI.
 
-Based on the precise coordinates (latitude: {lat}, longitude: {lon}), 
-list the top 3 real dermatology clinics and real skin doctors near that location in JSON format. 
-These should be actual nearby places, not placeholder names like "Clinic A".
+Based on the coordinates latitude: {lat}, longitude: {lon}, list the top 3 **real** dermatology clinics and skin doctors near that location.
 
-Please respond in raw JSON only, like this:
+Only include names that are publicly available online (e.g., listed on Google Maps or clinic websites).
+
+Respond ONLY in **valid JSON format** like this:
 {{
   "clinics": [
     {{
       "name": "ClearSkin Clinic",
-      "address": "123 Skin St, City, State",
       "note": "Specializes in acne and pigmentation treatment"
     }},
     {{
       "name": "DermCare Center",
-      "address": "987 Skin St, City, State",
       "note": "Offers mole checks and skin cancer screening"
     }}
   ],
- "doctors": [
+  "doctors": [
     {{
       "name": "Dr. Jennifer Lee",
       "specialty": "Dermatologist",
@@ -79,22 +77,18 @@ Please respond in raw JSON only, like this:
       "name": "Dr. Alex Gomez",
       "specialty": "Skin Specialist",
       "note": "Focuses on cosmetic skin procedures and acne care"
-    }},
-    {{
-      "name": "Dr. Priya Shah",
-      "specialty": "Dermatologist",
-      "note": "Known for psoriasis and eczema treatment"
     }}
   ]
 }}
-Only include names if they are already publicly available online.
+Only return the JSON — no explanation or intro.
 """
+
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
         result = model.generate_content(prompt)
         text = result.text
+        print("🧠 Gemini raw response:\n", text)
 
-        # Extract JSON block from Gemini output
         start = text.find('{')
         end = text.rfind('}') + 1
         parsed = json.loads(text[start:end])
@@ -102,8 +96,9 @@ Only include names if they are already publicly available online.
         return parsed.get("clinics", []), parsed.get("doctors", [])
     except Exception as e:
         print("❌ Gemini error:", e)
-        print("❌ Raw Gemini output:", text if 'text' in locals() else '[No output]')
+        print("❌ Response:\n", text if 'text' in locals() else '[No output]')
         return [], []
+
 
 # === Flask Routes ===
 @app.route('/predict', methods=['POST'])
