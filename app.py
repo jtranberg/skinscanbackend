@@ -46,16 +46,13 @@ triage_model = load_model(TRIAGE_MODEL_PATH) if os.path.exists(TRIAGE_MODEL_PATH
 class_labels = json.load(open(LABELS_PATH)) if os.path.exists(LABELS_PATH) else ["Unknown"]
 treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH) else {}
 
-
-
-
 # === Gemini Clinic + Doctor Suggestion ===
 def get_clinics_and_doctors(lat, lon):
     prompt = f"""
 You are a helpful medical assistant AI.
 
 Based on the precise coordinates (latitude: {lat}, longitude: {lon}), 
-list the top 3 real dermatology clinics and skin doctors near that location in JSON format. 
+list the top 3 real dermatology clinics and real skin doctors near that location in JSON format. 
 These should be actual nearby places, not placeholder names like "Clinic A".
 
 Please respond in raw JSON only, like this:
@@ -72,23 +69,26 @@ Please respond in raw JSON only, like this:
       "note": "Offers mole checks and skin cancer screening"
     }}
   ],
-  "doctors": [
+ "doctors": [
     {{
-      "name": "Dr. Jane Smith",
+      "name": "Dr. Jennifer Lee",
       "specialty": "Dermatologist",
-      "address": "123 Skin St, City, State",
-      "note": "Expert in melanoma detection"
+      "note": "Expert in mole analysis and skin cancer detection"
     }},
     {{
-      "name": "Dr. John Doe",
+      "name": "Dr. Alex Gomez",
       "specialty": "Skin Specialist",
-      "address": "123 Skin St, City, State",
-      "note": "Focuses on cosmetic skin treatments"
+      "note": "Focuses on cosmetic skin procedures and acne care"
+    }},
+    {{
+      "name": "Dr. Priya Shah",
+      "specialty": "Dermatologist",
+      "note": "Known for psoriasis and eczema treatment"
     }}
   ]
 }}
+Only include names if they are already publicly available online.
 """
-
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
         result = model.generate_content(prompt)
@@ -104,7 +104,6 @@ Please respond in raw JSON only, like this:
         print("❌ Gemini error:", e)
         print("❌ Raw Gemini output:", text if 'text' in locals() else '[No output]')
         return [], []
-
 
 # === Flask Routes ===
 @app.route('/predict', methods=['POST'])
@@ -150,10 +149,17 @@ def predict():
         normalized_class = predicted_class.strip().lower()
         print(f"🔍 Looking up treatment for: '{predicted_class}'")
         print(f"🧾 Available treatment keys: {list(treatments.keys())}")
-        treatment = next(
-            (v for k, v in treatments.items() if k.strip().lower() == normalized_class),
-            "No treatment info available."
-        )
+
+        treatment = None
+        for k, v in treatments.items():
+            print(f"🔎 Comparing '{k.strip().lower()}' to '{normalized_class}'")
+            if k.strip().lower() == normalized_class:
+                treatment = v
+                break
+
+        if not treatment:
+            print("⚠️ No treatment found for this class.")
+            treatment = "No treatment info available."
 
         # === Gemini integration
         suggested_clinics, suggested_doctors = get_clinics_and_doctors(lat, lon)
@@ -174,10 +180,6 @@ def predict():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-
-
-
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
