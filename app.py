@@ -48,32 +48,43 @@ treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH)
 
 # === Gemini Clinic + Doctor Suggestion ===
 def get_clinics_and_doctors(lat, lon):
-    prompt = f"""
+   prompt = f"""
 You are a helpful medical assistant AI.
 
-Based on the coordinates (latitude: {lat}, longitude: {lon}), return the top 3 publicly listed dermatology clinics and skin doctors **nearby**.
+Based on the coordinates (latitude: {lat}, longitude: {lon}), return:
+- A list of up to 3 publicly listed dermatology clinics nearby
+- For each clinic, try to list a publicly available doctor who works there (if possible)
 
-Return real names that are publicly available (e.g., from Google Maps or clinic websites). Only return JSON — no intro or notes.
+All names must be available from public online sources (e.g., Google Maps, Healthgrades, or official websites).
 
-If nothing can be found nearby, list 3 commonly available dermatology clinics in the nearest major city.
+If you cannot find exact matches for this coordinate, fallback to well-known dermatology clinics and doctors in the nearest major city.
 
-Respond in this format:
+Respond **only** in JSON format like this:
 {{
   "clinics": [
     {{
       "name": "ClearSkin Clinic",
-      "note": "Specializes in acne and pigmentation treatment"
-    }}
-  ],
-  "doctors": [
+      "note": "Specializes in acne treatment and pigmentation",
+      "doctor": {{
+        "name": "Dr. Jane Smith",
+        "specialty": "Dermatologist",
+        "note": "Expert in melanoma detection"
+      }}
+    }},
     {{
-      "name": "Dr. Jane Smith",
-      "specialty": "Dermatologist",
-      "note": "Expert in melanoma detection"
+      "name": "DermCare Center",
+      "note": "Mole checks and skin cancer screening",
+      "doctor": {{
+        "name": "Dr. Alex Gomez",
+        "specialty": "Skin Specialist",
+        "note": "Focuses on cosmetic dermatology"
+      }}
     }}
   ]
 }}
+Only include the `"doctor"` key if you can find a publicly listed name.
 """
+
 
 
     try:
