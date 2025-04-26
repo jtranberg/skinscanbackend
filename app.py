@@ -46,6 +46,9 @@ triage_model = load_model(TRIAGE_MODEL_PATH) if os.path.exists(TRIAGE_MODEL_PATH
 class_labels = json.load(open(LABELS_PATH)) if os.path.exists(LABELS_PATH) else ["Unknown"]
 treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH) else {}
 
+
+print(f"📍 Received location: lat={lat}, lon={lon}")
+
 # === Gemini Clinic + Doctor Suggestion ===
 def get_clinics_and_doctors(lat, lon):
     prompt = f"""
@@ -92,6 +95,7 @@ Respond ONLY in **valid JSON format**, like this:
         return parsed.get("clinics", []), parsed.get("doctors", [])
     except Exception as e:
         print("❌ Gemini error:", e)
+        print("❌ Raw Gemini output:", text if 'text' in locals() else '[No output]')
         return [], []
 
 @app.route('/predict', methods=['POST'])
@@ -133,9 +137,14 @@ def predict():
             predicted_class = top1 = top2 = top3 = "Normal"
             confidence = 1.0
 
-        treatment = treatments.get(predicted_class, "No treatment info available.")
+        # === Normalized lookup for treatment
+        normalized_class = predicted_class.strip().lower()
+        treatment = next(
+            (v for k, v in treatments.items() if k.strip().lower() == normalized_class),
+            "No treatment info available."
+        )
 
-        # 💡 Gemini integration for nearby clinics & doctors
+        # === Gemini integration
         suggested_clinics, suggested_doctors = get_clinics_and_doctors(lat, lon)
 
         return jsonify({
@@ -154,6 +163,10 @@ def predict():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
