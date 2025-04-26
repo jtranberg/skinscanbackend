@@ -47,7 +47,7 @@ class_labels = json.load(open(LABELS_PATH)) if os.path.exists(LABELS_PATH) else 
 treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH) else {}
 
 
-print(f"📍 Received location: lat={lat}, lon={lon}")
+
 
 # === Gemini Clinic + Doctor Suggestion ===
 def get_clinics_and_doctors(lat, lon):
