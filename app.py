@@ -54,17 +54,21 @@ def get_clinics_and_doctors(lat, lon):
     prompt = f"""
 You are a helpful medical assistant AI.
 
-Based on the location (latitude: {lat}, longitude: {lon}), list the top 3 nearby dermatology clinics and doctors.
+Based on the precise coordinates (latitude: {lat}, longitude: {lon}), 
+list the top 3 real dermatology clinics and skin doctors near that location in JSON format. 
+These should be actual nearby places, not placeholder names like "Clinic A".
 
-Respond ONLY in **valid JSON format**, like this:
+Please respond in raw JSON only, like this:
 {{
   "clinics": [
     {{
       "name": "ClearSkin Clinic",
+      "address": "123 Skin St, City, State",
       "note": "Specializes in acne and pigmentation treatment"
     }},
     {{
       "name": "DermCare Center",
+      "address": "987 Skin St, City, State",
       "note": "Offers mole checks and skin cancer screening"
     }}
   ],
@@ -72,16 +76,19 @@ Respond ONLY in **valid JSON format**, like this:
     {{
       "name": "Dr. Jane Smith",
       "specialty": "Dermatologist",
+      "address": "123 Skin St, City, State",
       "note": "Expert in melanoma detection"
     }},
     {{
       "name": "Dr. John Doe",
       "specialty": "Skin Specialist",
+      "address": "123 Skin St, City, State",
       "note": "Focuses on cosmetic skin treatments"
     }}
   ]
 }}
-    """
+"""
+
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
         result = model.generate_content(prompt)
@@ -98,6 +105,8 @@ Respond ONLY in **valid JSON format**, like this:
         print("❌ Raw Gemini output:", text if 'text' in locals() else '[No output]')
         return [], []
 
+
+# === Flask Routes ===
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -139,6 +148,8 @@ def predict():
 
         # === Normalized lookup for treatment
         normalized_class = predicted_class.strip().lower()
+        print(f"🔍 Looking up treatment for: '{predicted_class}'")
+        print(f"🧾 Available treatment keys: {list(treatments.keys())}")
         treatment = next(
             (v for k, v in treatments.items() if k.strip().lower() == normalized_class),
             "No treatment info available."
