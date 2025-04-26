@@ -3,6 +3,7 @@ import json
 import traceback
 import numpy as np
 import requests
+import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
@@ -13,6 +14,10 @@ from tensorflow.keras.utils import img_to_array
 app = Flask(__name__)
 CORS(app)
 
+# Load Gemini API key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_API_KEY_HERE")
+genai.configure(api_key=GEMINI_API_KEY)
+
 MODEL_DIR = 'model'
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -21,7 +26,6 @@ TRIAGE_MODEL_PATH = os.path.join(MODEL_DIR, 'best_model3.keras')
 LABELS_PATH = os.path.join(MODEL_DIR, 'class_labels_8.json')
 TREATMENTS_PATH = os.path.join(MODEL_DIR, 'treatments.json')
 
-# === URLs to download models ===
 MODEL_URL = "https://github.com/jtranberg/8_class_model/releases/download/v1.0/best_model.keras"
 TRIAGE_URL = "https://github.com/jtranberg/3_class_model/releases/download/v1.0/best_model3.keras"
 
@@ -34,15 +38,61 @@ def download_file(url, dest):
                 f.write(chunk)
         print(f"✅ Downloaded: {dest}")
 
-# === Download missing model files ===
 download_file(MODEL_URL, MODEL_PATH)
 download_file(TRIAGE_URL, TRIAGE_MODEL_PATH)
 
-# === Load models and configs ===
 model = load_model(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
 triage_model = load_model(TRIAGE_MODEL_PATH) if os.path.exists(TRIAGE_MODEL_PATH) else None
 class_labels = json.load(open(LABELS_PATH)) if os.path.exists(LABELS_PATH) else ["Unknown"]
 treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH) else {}
+
+# === Gemini Clinic + Doctor Suggestion ===
+def get_clinics_and_doctors(lat, lon):
+    prompt = f"""
+You are a helpful medical assistant AI.
+
+Based on the location (latitude: {lat}, longitude: {lon}), list the top 3 nearby dermatology clinics and doctors.
+
+Respond ONLY in **valid JSON format**, like this:
+{{
+  "clinics": [
+    {{
+      "name": "ClearSkin Clinic",
+      "note": "Specializes in acne and pigmentation treatment"
+    }},
+    {{
+      "name": "DermCare Center",
+      "note": "Offers mole checks and skin cancer screening"
+    }}
+  ],
+  "doctors": [
+    {{
+      "name": "Dr. Jane Smith",
+      "specialty": "Dermatologist",
+      "note": "Expert in melanoma detection"
+    }},
+    {{
+      "name": "Dr. John Doe",
+      "specialty": "Skin Specialist",
+      "note": "Focuses on cosmetic skin treatments"
+    }}
+  ]
+}}
+    """
+    try:
+        model = genai.GenerativeModel("gemini-pro")
+        result = model.generate_content(prompt)
+        text = result.text
+
+        # Extract JSON block from Gemini output
+        start = text.find('{')
+        end = text.rfind('}') + 1
+        parsed = json.loads(text[start:end])
+
+        return parsed.get("clinics", []), parsed.get("doctors", [])
+    except Exception as e:
+        print("❌ Gemini error:", e)
+        return [], []
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -85,6 +135,9 @@ def predict():
 
         treatment = treatments.get(predicted_class, "No treatment info available.")
 
+        # 💡 Gemini integration for nearby clinics & doctors
+        suggested_clinics, suggested_doctors = get_clinics_and_doctors(lat, lon)
+
         return jsonify({
             'predicted_class': predicted_class,
             'confidence': round(confidence, 4),
@@ -95,8 +148,8 @@ def predict():
             'gender': gender,
             'weight': weight,
             'most_common_treatment': treatment,
-            'suggested_clinics': [],
-            'suggested_doctors': []
+            'suggested_clinics': suggested_clinics,
+            'suggested_doctors': suggested_doctors
         })
     except Exception as e:
         traceback.print_exc()
