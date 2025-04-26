@@ -48,7 +48,7 @@ treatments = json.load(open(TREATMENTS_PATH)) if os.path.exists(TREATMENTS_PATH)
 
 # === Gemini Clinic + Doctor Suggestion ===
 def get_clinics_and_doctors(lat, lon):
-   prompt = f"""
+    prompt = f"""
 You are a helpful medical assistant AI.
 
 Based on the coordinates (latitude: {lat}, longitude: {lon}), return:
@@ -82,8 +82,10 @@ Respond **only** in JSON format like this:
     }}
   ]
 }}
-Only include the `"doctor"` key if you can find a publicly listed name.
+Only include the "doctor" key if you can find a publicly listed name.
 """
+
+
 
 
 
